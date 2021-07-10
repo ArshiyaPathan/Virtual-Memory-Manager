@@ -1,5 +1,4 @@
-import part1
-import part2
+from Change.Check import Checks
 
 physicalMemory = {}
 tlb = []
@@ -9,35 +8,40 @@ tlbHitCounter = 0
 addressReadCounter = 0
 
 
-if __name__ == '__main__':
-    outputFile = open('output.txt', 'w')
+def main_func():
+    global physicalMemory
+    global tlb
+    global pageTable
+    global pageFaultCounter
+    global tlbHitCounter
+    global addressReadCounter
 
+    outputFile = open('../output.txt', 'w')
     with open('addresses.txt', 'r') as addressFile:
         for line in addressFile:
             tlbHit = 0
             pageTableTrue = 0
-
             logicalAddress = int(line)
             offset = logicalAddress & 255
             pageOriginal = logicalAddress & 65280
-            pageNumber = pageOriginal >> 8
-            print("Logical address is: " + str(logicalAddress) + "\nPageNumber is: " + str(pageNumber) + "\nOffset: " + str(offset))
+            page_number = pageOriginal >> 8
             addressReadCounter += 1
 
-            tlbHit = part1.checkTLB(pageNumber, physicalMemory, offset, logicalAddress, tlb, addressReadCounter, outputFile)
+            print(f"Logical address is: {logicalAddress} PageNumber is: {page_number} Offset: {offset}")
+            obj = Checks(page_number, physicalMemory, offset, logicalAddress, tlb, addressReadCounter, outputFile)
+            tlbHit = obj.check_tlb()
 
-            if tlbHit == 1:
+            if tlbHit:
                 tlbHitCounter += 1
 
-            if tlbHit != 1:
-                pageTableTrue = part1.checkPageTable(pageNumber, logicalAddress, offset, addressReadCounter, pageTable, physicalMemory, outputFile)
+            if not tlbHit:
+                pageTableTrue = obj.check_page_table(pageTable)
 
-            if pageTableTrue != 1 and tlbHit != 1:
+            if pageTableTrue is False and tlbHit is False:
                 print("This is a page fault!")
-                part2.pageFaultHandler(pageNumber, tlb, pageTable, physicalMemory)
+                Checks.page_fault_handler(page_number, tlb, pageTable, physicalMemory)
                 pageFaultCounter += 1
-                part1.checkTLB(pageNumber, physicalMemory, offset, logicalAddress, tlb, addressReadCounter, outputFile)
-
+                obj.check_tlb()
 
     pageFaultRate = pageFaultCounter / addressReadCounter
     tlbHitRate = tlbHitCounter / addressReadCounter
@@ -46,6 +50,9 @@ if __name__ == '__main__':
         tlbHitCounter) + '\n' + 'TLB hit rate: ' + str(tlbHitRate) + '\n'
     print(outStr)
     outputFile.write(outStr)
-
     outputFile.close()
     addressFile.close()
+
+
+if __name__ == '__main__':
+    main_func()
